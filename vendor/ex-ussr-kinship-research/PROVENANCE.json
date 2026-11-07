@@ -1,0 +1,47 @@
+{
+  "repository": "https://github.com/DenisSergeevitch/ex-ussr-kinship-research",
+  "commit": "84b0eda770b002464e84658a8f63046a4bb94e95",
+  "version": "1.34.0",
+  "files": {
+    "SKILL.md": {
+      "sha256": "0f02c9d6065c7bd8e0dd395d9ee2911fa41c95a5e464a4781cc31839a015be04",
+      "bytes": 56298
+    },
+    "LICENSE": {
+      "sha256": "e741683284c4161a8a319d4bdf20d315994ccf6a53fe77f9121081506e0e1e4c",
+      "bytes": 1071
+    },
+    "references/evidence-protocol.md": {
+      "sha256": "04836c1c62975db2a65d943c8cbc661620b38611d2844ec268659bacd3666737",
+      "bytes": 38801
+    },
+    "references/source-strategy.md": {
+      "sha256": "6cbfb5cc264f4cdc2c9e088610a97c680a17a4fed54cf3021d7335561ca34960",
+      "bytes": 81099
+    },
+    "scripts/audit_evidence.py": {
+      "sha256": "b89af9b5e3e9859326e3f1ce3b916cf1e81cc736ef2d49f55561b9a1ac217c41",
+      "bytes": 21815
+    },
+    "assets/artifact-register.csv": {
+      "sha256": "4a0a16264dae7be15b7d4806b503d2a43b04d09001d9cb16685b486cc565de0c",
+      "bytes": 323
+    },
+    "assets/claims-register.csv": {
+      "sha256": "8c24b260156767424835695cdf635719998d1ec99b88ec48468326bf0f0f9fec",
+      "bytes": 161
+    },
+    "assets/person-register.csv": {
+      "sha256": "d425c925e6a178c4936e7060f4425a55acb783b85bce8e3e02aecd8029575382",
+      "bytes": 291
+    },
+    "assets/relationship-register.csv": {
+      "sha256": "a17001c078e41053715cee57d49e04469c5a7ddb628b00693166479130e8e90a",
+      "bytes": 194
+    },
+    "scripts/research_common.py": {
+      "sha256": "8c6d25a5f795316ca9baf80aa624c6b5eb980813416c98d3bb019eab459af7eb",
+      "bytes": 7374
+    }
+  }
+}

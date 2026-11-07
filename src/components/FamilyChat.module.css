@@ -1,0 +1,26 @@
+.chat { color: #203e37; font-size: 14px; line-height: 1.6; }
+.chat h2 { margin: 0; font-size: 22px; }
+.chat h3 { margin: 16px 0 6px; font-size: 15px; }
+.chat p { margin: 8px 0; white-space: pre-line; overflow-wrap: anywhere; }
+.chat a, .citations button { color: #226655; text-decoration: underline; }
+.muted { color: #5c7069; font-size: 12px; }
+.empty { padding: 24px 0; }
+.error { color: #9b3c32; background: #fff1eb; padding: 10px; border-radius: 8px; }
+.turns { display: grid; gap: 18px; margin: 20px 0; }
+.turn { padding: 16px; background: #fff; border: 1px solid #d8e3dc; border-radius: 14px; }
+.question { font-weight: 700; border-bottom: 1px solid #e2e9e4; padding-bottom: 10px; }
+.paragraph { margin: 12px 0; }
+.citations { display: flex; gap: 6px; flex-wrap: wrap; list-style: none; padding: 0; margin: 4px 0; }
+.citations li { font-size: 11px; background: #edf4ef; border-radius: 6px; padding: 3px 7px; }
+.citations button { padding: 0; background: none; border: 0; cursor: pointer; font: inherit; text-align: left; }
+.form { display: grid; gap: 10px; padding-top: 16px; border-top: 1px solid #d8e3dc; }
+.form textarea { resize: vertical; width: 100%; box-sizing: border-box; border: 1px solid #a7bcb0; border-radius: 10px; padding: 12px; font: inherit; color: inherit; background: #fff; }
+.form select { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #a7bcb0; border-radius: 8px; background: white; color: inherit; font: inherit; }
+.search { display: flex; align-items: flex-start; gap: 9px; font-size: 12px; }
+.search input { margin-top: 5px; }
+.search small { display: block; color: #5c7069; margin-top: 4px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.actions button { border: 1px solid #255d4e; color: white; background: #255d4e; padding: 10px 16px; border-radius: 9px; font: inherit; cursor: pointer; }
+.actions button + button { background: transparent; color: #255d4e; }
+.actions button:disabled { opacity: .5; cursor: default; }
+.chat button:focus-visible, .chat a:focus-visible, .chat textarea:focus-visible, .chat input:focus-visible { outline: 3px solid #d59444; outline-offset: 3px; }

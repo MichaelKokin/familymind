@@ -1,0 +1,70 @@
+import { test, expect } from "@playwright/test";
+import { randomUUID } from "node:crypto";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { LocalCaseAccess } from "../src/private-case/access";
+import { PrivateCaseStore } from "../src/private-case/server-store";
+import { MemberNotesStore } from "../src/private-case/member-store";
+import type { PrivateCase } from "../src/private-case/model";
+import type { ChatResponse } from "../src/private-case/chat-model";
+import { syntheticResearch } from "./fixtures/private-research";
+import { chatCopy as c } from "../src/i18n/chat";
+import { exploreText as explore } from "../src/i18n/explore";
+
+const root = process.env.FAMILYMIND_PRIVATE_E2E_ROOT!;
+const origin = "http://127.0.0.1:3001";
+let token: string, caseId: string;
+const answer = "СИНТЕТИЧЕСКИЙ ЧАТ: ответ тестового процесса по семейному источнику; реальная модель не вызывалась.";
+test.beforeEach(async () => {
+  expect(await readFile(path.join(root, ".synthetic-e2e-owned"), "utf8")).toBe("family-mind-synthetic-e2e\n");
+  caseId = `chat-synthetic-${randomUUID()}`;
+  const now = new Date().toISOString();
+  const value: PrivateCase = { schemaVersion: 1, id: caseId, title: "СИНТЕТИЧЕСКИЙ ЧАТ", revision: 0, updatedAt: now, subject: { personId: "synthetic-a", name: "Вымышленная Елена Тестова", dateText: "1900–1980; искусственные данные", livingStatus: "deceased" }, sources: [{ id: "synthetic-source", title: "Тестовое дерево", url: "https://example.invalid/record", kind: "user_tree", locator: "Учебная карточка", excerpt: "SYNTHETIC_PRIVATE_LETTER_MARKER", observedAt: now }], known: [], question: "Учебный вопрос", notes: "Только вымышленное дело.", aiRuns: [], reviews: [] };
+  await new PrivateCaseStore(root).save(value, null);
+  await mkdir(path.join(root, "research"), { recursive: true, mode: 0o700 });
+  await writeFile(path.join(root, "research", `${caseId}.json`), JSON.stringify(syntheticResearch()), { mode: 0o600 });
+  await new MemberNotesStore(root).create({ caseId, memberId: "owner", role: "owner", sessionId: "synthetic-session" }, { personId: "synthetic-a", visibility: "private", text: "SYNTHETIC_PRIVATE_OWNER_NOTE_MARKER" }, ["synthetic-a"]);
+  ({ token } = await new LocalCaseAccess(root, origin).createBootstrap(caseId));
+});
+
+test("private chat answers through the isolated process, opens sources and persists across reload", async ({ page, request }) => {
+  expect((await request.get("/api/private/chat")).status()).toBe(401);
+  await page.goto(`/case#token=${encodeURIComponent(token)}`);
+  await expect(page.getByTestId("private-case")).toBeVisible();
+  await page.goto("/case/explore");
+  await page.getByRole("button", { name: explore.chatTab, exact: true }).click();
+  const chat = page.getByRole("region", { name: c.title });
+  await chat.getByRole("textbox", { name: c.question }).fill("Что известно об учебной семейной связи?");
+  await chat.getByRole("button", { name: c.send, exact: true }).click();
+  await expect(chat.getByText(answer, { exact: true })).toBeVisible({ timeout: 25_000 });
+  await chat.getByRole("button", { name: "Синтетическая карточка источника", exact: true }).click();
+  await expect(page.getByRole("dialog").getByText("Не настоящий архивный документ.")).toBeVisible();
+  await page.getByRole("dialog").getByRole("button", { name: explore.close, exact: true }).click();
+  const sent = await readFile(path.join(root, "fixture-chat-answer-prompt.txt"), "utf8");
+  expect(sent).toContain("SYNTHETIC_PRIVATE_LETTER_MARKER"); expect(sent).toContain("SYNTHETIC_PRIVATE_OWNER_NOTE_MARKER"); expect(sent).not.toContain("data:image/png");
+  await page.reload(); await page.getByRole("button", { name: explore.chatTab, exact: true }).click();
+  await expect(page.getByRole("region", { name: c.title }).getByText(answer, { exact: true })).toBeVisible();
+  const state = (await (await page.request.get("/api/private/chat?caseId=other")).json()) as ChatResponse;
+  expect(state.caseId).toBe(caseId); expect(state.turns[0].citations[0].id).toBe("research:synthetic-source");
+  expect((await page.request.post("/api/private/chat", { headers: { Origin: "https://attacker.example" }, data: { question: "Forbidden", expectedRevision: state.revision } })).status()).toBe(403);
+  expect(JSON.parse(await readFile(path.join(root, "chat", `${caseId}.json`), "utf8")).turns[0].status).toBe("completed");
+});
+
+test("unverified external search is unavailable before a model call and cancellation stops a pending answer", async ({ page }) => {
+  await page.goto(`/case#token=${encodeURIComponent(token)}`); await expect(page.getByTestId("private-case")).toBeVisible();
+  await page.goto("/case/explore"); await page.getByRole("button", { name: explore.chatTab, exact: true }).click();
+  const chat = page.getByRole("region", { name: c.title });
+  await expect(chat.getByText(c.searchDisabledReason, { exact: true })).toBeVisible();
+  await expect(chat.getByRole("checkbox")).toHaveCount(0);
+  const denied = await page.request.post("/api/private/chat", { headers: { Origin: origin }, data: { question: "SYNTHETIC_PRIVATE_QUESTION_MARKER", expectedRevision: 0, searchWeb: true, searchSubjectId: "synthetic-a" } });
+  expect(denied.status()).toBe(400); expect(await denied.json()).toEqual({ error: "PUBLIC_SEARCH_UNAVAILABLE" });
+  const unchanged = (await (await page.request.get("/api/private/chat")).json()) as ChatResponse;
+  expect(unchanged.capabilities.webSearch).toBe("unavailable"); expect(unchanged.revision).toBe(0); expect(unchanged.turns).toEqual([]);
+  await chat.getByRole("textbox", { name: c.question }).fill("СИНТЕТИЧЕСКИЙ ДОЛГИЙ ОТВЕТ");
+  await chat.getByRole("button", { name: c.send, exact: true }).click();
+  await expect(chat.getByRole("button", { name: c.cancel })).toBeVisible();
+  await chat.getByRole("button", { name: c.cancel }).click();
+  await expect(chat.getByText(c.cancelled, { exact: true })).toBeVisible();
+  const state = (await (await page.request.get("/api/private/chat")).json()) as ChatResponse;
+  expect(state.turns.at(-1)?.status).toBe("cancelled"); expect(state.turns.at(-1)?.answer).toBeNull();
+});
