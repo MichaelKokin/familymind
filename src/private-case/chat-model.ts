@@ -4,13 +4,13 @@ import { privateId, PrivateCaseError } from "./model";
 export const CHAT_MAX_QUESTION = 2000;
 export const CHAT_MAX_CONTEXT_BYTES = 220_000;
 export const CHAT_MAX_TURNS = 100;
-export const referenceId = z.string().max(160).regex(/^(research|case|note):[a-zA-Z0-9_-]+$/);
+export const referenceId = z.string().max(160).regex(/^(research|case|note|space):[a-zA-Z0-9_-]+$/);
 export const chatAnswerSchema = z.object({
   paragraphs: z.array(z.object({ text: z.string().min(1).max(4000), sourceIds: z.array(referenceId).max(12) }).strict()).min(1).max(8),
   unknowns: z.array(z.string().min(1).max(1500)).max(8),
   nextSteps: z.array(z.string().min(1).max(1500)).max(6),
 }).strict();
-export const citationSchema = z.object({ id: referenceId, sourceId: privateId, scope: z.enum(["research", "case", "note"]), title: z.string().max(2000), url: z.string().max(4000), locator: z.string().max(50000) }).strict();
+export const citationSchema = z.object({ id: referenceId, sourceId: privateId, scope: z.enum(["research", "case", "note", "space"]), title: z.string().max(2000), url: z.string().max(4000), locator: z.string().max(50000) }).strict();
 export const webLeadSchema = z.object({ title: z.string().min(1).max(500), url: z.string().max(4000), detail: z.string().max(2000) }).strict();
 export const webAnswerSchema = z.object({ leads: z.array(webLeadSchema).max(8), limitation: z.string().max(2000) }).strict();
 export const turnSchema = z.object({

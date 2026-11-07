@@ -5,8 +5,8 @@ import { chatCopy as c } from "@/i18n/chat";
 import { safePublicChatUrl, type ChatResponse, type ChatCitation } from "@/private-case/chat-model";
 import styles from "./FamilyChat.module.css";
 
-export type FamilyChatProps = { mode: "private" | "demo"; onOpenSource?: (sourceId: string) => void; initialQuestion?: string };
-export default function FamilyChat({ mode, onOpenSource, initialQuestion = "" }: FamilyChatProps) {
+export type FamilyChatProps = { mode: "private" | "demo"; onOpenSource?: (sourceId: string) => void; onOpenSpaceRecord?: (recordId: string) => void; initialQuestion?: string };
+export default function FamilyChat({ mode, onOpenSource, onOpenSpaceRecord, initialQuestion = "" }: FamilyChatProps) {
   const [state, setState] = useState<ChatResponse | null>(null), [question, setQuestion] = useState(initialQuestion), [searchWeb, setSearchWeb] = useState(false), [sending, setSending] = useState(false), [error, setError] = useState("");
   const [searchSubjectId, setSearchSubjectId] = useState("");
   const requestId = useRef(0);
@@ -42,6 +42,7 @@ export default function FamilyChat({ mode, onOpenSource, initialQuestion = "" }:
   }
   function citation(item: ChatCitation) {
     if (item.scope === "research" && onOpenSource) return <button type="button" onClick={() => onOpenSource(item.sourceId)}>{item.title}</button>;
+    if (item.scope === "space" && onOpenSpaceRecord) return <button type="button" onClick={() => onOpenSpaceRecord(item.sourceId)}>{item.title}</button>;
     if (safePublicChatUrl(item.url)) return <a href={item.url} target="_blank" rel="noopener noreferrer">{item.title}</a>;
     return <span>{item.title}</span>;
   }

@@ -1,0 +1,164 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { LocalCaseAccess, SESSION_COOKIE } from "../src/private-case/access";
+import { PrivateCaseStore } from "../src/private-case/server-store";
+import { applySpaceAction, initialSpace, type SpaceContext } from "../src/private-case/space-logic";
+import { parsePrivateSpace } from "../src/private-case/space-model";
+import { PrivateSpaceStore } from "../src/private-case/space-store";
+import { addMaterial, getSpace, importSpace, mutateSpace, exportSpace, type SpaceBundle, type SpaceStateResponse } from "../src/private-case/space-api";
+import { composeSpace, findNodeId, layoutSpace, FIND_CARD_WIDTH } from "../src/private-case/space-layout";
+import { suggestNextStep } from "../src/private-case/space-guide";
+import { syntheticResearch } from "../e2e/fixtures/private-research";
+
+const now = "2026-11-07T12:00:00.000Z";
+const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aZQAAAABJRU5ErkJggg==", "base64");
+let counter = 0;
+const context: SpaceContext = { now, snapshotPeopleIds: new Set(["synthetic-a", "synthetic-b"]), snapshotOwnerId: "synthetic-b", snapshotRelationships: [{ from: "synthetic-a", to: "synthetic-b", kind: "parent_child" }], newId: (prefix) => `${prefix}_${String(++counter).padStart(4, "0")}` };
+const source = { title: "Синтетический индекс метрических книг", url: "https://archive.example.org/synthetic-index", locator: "Запись 12", excerpt: "Условная выдержка: тёзка родился около 1930.", kind: "Индекс", dateText: "1930" };
+
+describe("leads and finds: manual research route", () => {
+  it("records a lead, a candidate with an explanation, and an accepted find becomes a placed material without proving kinship", () => {
+    let space = initialSpace("case_synthetic", "a".repeat(64), now);
+    const lead = applySpaceAction(space, { action: "add_lead", lead: { personId: "synthetic-b", question: "Найти запись о рождении", placeText: "Учебная губерния", periodText: "около 1930" } }, context);
+    space = lead.space;
+    expect(space.leads[0]).toMatchObject({ status: "open", mode: "manual", personId: "synthetic-b" });
+    expect(() => applySpaceAction(space, { action: "update_lead", id: lead.created.leadId!, lead: {}, status: "nothing_found" }, context)).toThrow("LEAD_COVERAGE_REQUIRED");
+    expect(() => applySpaceAction(space, { action: "update_lead", id: lead.created.leadId!, lead: {}, status: "candidate" }, context)).toThrow("LEAD_STATUS_DERIVED");
+    expect(() => applySpaceAction(space, { action: "add_find", find: { leadId: lead.created.leadId!, personIds: ["synthetic-b"], title: "Без объяснения", source, why: "", novelty: "new" } }, context)).toThrow();
+    expect(() => applySpaceAction(space, { action: "add_find", find: { leadId: lead.created.leadId!, personIds: ["ghost"], title: "Чужой", source, why: "Совпадает имя", novelty: "new" } }, context)).toThrow("PERSON_NOT_FOUND");
+    const find = applySpaceAction(space, { action: "add_find", find: { leadId: lead.created.leadId!, personIds: ["synthetic-b"], title: "Запись о рождении тёзки", source, why: "Совпадают имя и примерный год; место ещё не подтверждено.", novelty: "new" } }, context);
+    space = find.space;
+    expect(space.finds[0]).toMatchObject({ status: "candidate", performedBy: "operator_manual", decidedAt: null, materialId: null });
+    expect(space.leads[0].status).toBe("candidate");
+    expect(() => applySpaceAction(space, { action: "decide_find", id: find.created.findId!, decision: "accepted", reason: "", nextQuestion: "" }, context)).toThrow();
+    const accepted = applySpaceAction(space, { action: "decide_find", id: find.created.findId!, decision: "accepted", reason: "Открыл источник: совпадают имя, год и место.", nextQuestion: "Найти родителей по этой записи" }, context);
+    space = accepted.space;
+    const material = space.materials.find((item) => item.id === accepted.created.materialId)!;
+    expect(material).toMatchObject({ kind: "link", origin: "external_find", findId: find.created.findId, personIds: ["synthetic-b"], url: source.url, provenance: "Синтетический индекс метрических книг · Запись 12 · Индекс", original: null });
+    expect(space.finds[0]).toMatchObject({ status: "accepted", materialId: material.id, decisionReason: "Открыл источник: совпадают имя, год и место." });
+    expect(space.leads[0]).toMatchObject({ status: "done", nextQuestion: "Найти родителей по этой записи" });
+    expect(space.journal.map((entry) => entry.action).slice(-3)).toEqual(["add_find", "add_material", "decide_find"]);
+    expect(() => applySpaceAction(space, { action: "decide_find", id: find.created.findId!, decision: "rejected", reason: "Передумал", nextQuestion: "" }, context)).toThrow("FIND_NOT_PENDING");
+    expect(JSON.stringify(space)).not.toMatch(/corroborated|strongly/);
+  });
+  it("keeps namesakes contested, returns the lead to open, records nothing-found coverage and a needed detail", () => {
+    let space = initialSpace("case_synthetic", "a".repeat(64), now);
+    const lead = applySpaceAction(space, { action: "add_lead", lead: { personId: "synthetic-a", question: "Найти фотографию", placeText: "", periodText: "" } }, context);
+    space = lead.space;
+    const find = applySpaceAction(space, { action: "add_find", find: { leadId: lead.created.leadId!, personIds: ["synthetic-a"], title: "Фото однофамилицы", source: { ...source, url: "", locator: "Альбом 3" }, why: "Совпадает только фамилия.", novelty: "known" } }, context);
+    space = find.space;
+    space = applySpaceAction(space, { action: "decide_find", id: find.created.findId!, decision: "contested", reason: "Однофамилица: другой год рождения.", nextQuestion: "" }, context).space;
+    expect(space.finds[0].status).toBe("contested");
+    expect(space.materials).toHaveLength(0);
+    expect(space.leads[0].status).toBe("open");
+    space = applySpaceAction(space, { action: "update_lead", id: lead.created.leadId!, lead: { coverage: "Просмотрены два синтетических альбома 1950-х." }, status: "nothing_found" }, context).space;
+    expect(space.leads[0]).toMatchObject({ status: "nothing_found", coverage: "Просмотрены два синтетических альбома 1950-х." });
+    expect(() => applySpaceAction(space, { action: "update_lead", id: lead.created.leadId!, lead: {}, status: "needs_detail" }, context)).toThrow("LEAD_DETAIL_REQUIRED");
+    space = applySpaceAction(space, { action: "update_lead", id: lead.created.leadId!, lead: { missingDetail: "Отчество" }, status: "needs_detail" }, context).space;
+    expect(space.leads[0].status).toBe("needs_detail");
+    space = applySpaceAction(space, { action: "update_lead", id: lead.created.leadId!, lead: {}, status: "cancelled" }, context).space;
+    expect(() => applySpaceAction(space, { action: "add_find", find: { leadId: lead.created.leadId!, personIds: ["synthetic-a"], title: "Поздно", source, why: "x", novelty: "new" } }, context)).toThrow("LEAD_CLOSED");
+  });
+  it("places pending candidates next to the person, hides decided ones and guides review first", () => {
+    let space = initialSpace("case_synthetic", "a".repeat(64), now);
+    const lead = applySpaceAction(space, { action: "add_lead", lead: { personId: "synthetic-b", question: "Найти запись", placeText: "", periodText: "" } }, context);
+    space = lead.space;
+    const find = applySpaceAction(space, { action: "add_find", find: { leadId: lead.created.leadId!, personIds: ["synthetic-b"], title: "Кандидат", source, why: "Совпадают имя и год.", novelty: "new" } }, context);
+    space = find.space;
+    const composition = composeSpace(syntheticResearch(), space);
+    const layout = layoutSpace(composition, space.layout);
+    const node = layout.nodes.find((item) => item.id === findNodeId(find.created.findId!))!;
+    const root = layout.nodes.find((item) => item.id === "root:synthetic-b")!;
+    expect(node).toMatchObject({ kind: "find", width: FIND_CARD_WIDTH, y: root.y });
+    expect(node.x).toBeLessThan(root.x);
+    expect(layout.edges.find((edge) => edge.kind === "find")).toMatchObject({ source: node.id, target: root.id });
+    expect(suggestNextStep(composition, { kind: "person", id: "synthetic-a" }, [])).toMatchObject({ action: "review_find", targetId: find.created.findId });
+    expect(suggestNextStep(composition, { kind: "find", id: find.created.findId! }, [])).not.toMatchObject({ action: "review_find" });
+    space = applySpaceAction(space, { action: "decide_find", id: find.created.findId!, decision: "rejected", reason: "Другой человек.", nextQuestion: "" }, context).space;
+    const after = layoutSpace(composeSpace(syntheticResearch(), space), space.layout);
+    expect(after.nodes.some((item) => item.kind === "find")).toBe(false);
+    const withMaterials = applySpaceAction(space, { action: "add_material", material: { kind: "note", title: "Заметка", text: "Текст", url: "", provenance: "", dateText: "", personIds: ["synthetic-b"] }, original: null }, context).space;
+    expect(suggestNextStep(composeSpace(syntheticResearch(), withMaterials), { kind: "person", id: "synthetic-b" }, [])).toMatchObject({ action: "ask_assistant" });
+    expect(suggestNextStep(composeSpace(syntheticResearch(), withMaterials), { kind: "person", id: "synthetic-a" }, ["parent:synthetic-a"])).toMatchObject({ action: "add_lead", targetId: "synthetic-a" });
+    const needs = applySpaceAction(space, { action: "update_lead", id: lead.created.leadId!, lead: { missingDetail: "Год рождения" }, status: "needs_detail" }, context).space;
+    expect(suggestNextStep(composeSpace(syntheticResearch(), needs), { kind: "lead", id: lead.created.leadId! }, [])).toMatchObject({ action: "lead_detail", detail: "Год рождения" });
+  });
+});
+
+let root: string;
+beforeEach(async () => { root = await mkdtemp(path.join(tmpdir(), "familymind-finds-synthetic-")); });
+afterEach(async () => { vi.unstubAllEnvs(); await rm(root, { recursive: true, force: true }); });
+const origin = "http://127.0.0.1:3000";
+const request = (route: string, init: { body?: unknown; token?: string } = {}) => {
+  const method = init.body === undefined ? "GET" : "POST";
+  const headers: Record<string, string> = { host: "127.0.0.1:3000" };
+  if (method !== "GET") { headers.origin = origin; headers["content-type"] = "application/json"; }
+  if (init.token) headers.cookie = `${SESSION_COOKIE}=${init.token}`;
+  return new Request(`${origin}/api/private/space${route}`, { method, headers, body: init.body === undefined ? undefined : JSON.stringify(init.body) });
+};
+const stateOf = async (response: Response) => (await response.json()) as SpaceStateResponse;
+
+describe("finds through the API, originals attached later, decisions immutable across import", () => {
+  it("attaches an original to a placed find, exports it and refuses rewriting a decision", async () => {
+    vi.stubEnv("FAMILYMIND_PRIVATE_ROOT", root);
+    vi.stubEnv("FAMILYMIND_ORIGIN", origin);
+    await new PrivateCaseStore(root).save({ schemaVersion: 1, id: "case_synthetic", title: "SYNTHETIC", revision: 0, updatedAt: now, subject: { personId: "synthetic-a", name: "Анна Учебная", dateText: "около 1900", livingStatus: "deceased" }, sources: [], known: [], question: "Учебный вопрос", notes: "", aiRuns: [], reviews: [] }, null);
+    await mkdir(path.join(root, "research"), { mode: 0o700 });
+    await writeFile(path.join(root, "research", "case_synthetic.json"), JSON.stringify(syntheticResearch()), { mode: 0o600 });
+    const access = new LocalCaseAccess(root, origin);
+    const token = (await access.exchange(new Request(`${origin}/api/private/session`, { method: "POST", headers: { host: "127.0.0.1:3000", origin } }), (await access.createBootstrap("case_synthetic")).token)).token;
+    let state = await stateOf(await getSpace(request("", { token })));
+    state = await stateOf(await mutateSpace(request("/mutate", { token, body: { expectedRevision: state.space.revision, action: { action: "add_lead", lead: { personId: "synthetic-b", question: "Найти документ", placeText: "", periodText: "" } } } })));
+    state = await stateOf(await mutateSpace(request("/mutate", { token, body: { expectedRevision: state.space.revision, action: { action: "add_find", find: { leadId: state.created!.leadId, personIds: ["synthetic-b"], title: "Справка", source: { ...source, url: "" }, why: "Совпадают имя и место.", novelty: "new" } } } })));
+    const findId = state.created!.findId!;
+    state = await stateOf(await mutateSpace(request("/mutate", { token, body: { expectedRevision: state.space.revision, action: { action: "decide_find", id: findId, decision: "accepted", reason: "Проверил по оригиналу.", nextQuestion: "" } } })));
+    const materialId = state.created!.materialId!;
+    expect(state.space.materials[0]).toMatchObject({ kind: "document", origin: "external_find", original: null });
+    const dataUrl = `data:image/png;base64,${PNG.toString("base64")}`;
+    const attached = await addMaterial(request("/material", { token, body: { expectedRevision: state.space.revision, materialId, file: { name: "scan.png", mime: "image/png", dataUrl } } }));
+    expect(attached.status).toBe(200);
+    state = await stateOf(attached);
+    expect(state.space.materials[0].original).toMatchObject({ name: "scan.png", mime: "image/png", size: PNG.length });
+    expect(state.space.journal.at(-1)?.action).toBe("attach_original");
+    expect((await addMaterial(request("/material", { token, body: { expectedRevision: state.space.revision, materialId, file: { name: "again.png", mime: "image/png", dataUrl } } }))).status).toBe(409);
+    expect((await addMaterial(request("/material", { token, body: { expectedRevision: state.space.revision, materialId: "material_missing", file: { name: "x.png", mime: "image/png", dataUrl } } }))).status).toBe(404);
+    const bundle = (await (await exportSpace(request("/export", { token, body: {} }))).json()) as SpaceBundle;
+    expect(bundle.space.finds).toHaveLength(1);
+    expect(bundle.files[0].materialId).toBe(materialId);
+    const rewritten = structuredClone(bundle);
+    rewritten.space.finds[0].status = "rejected";
+    rewritten.space.finds[0].materialId = null;
+    const refused = await importSpace(request("/import", { token, body: { expectedRevision: state.space.revision, bundle: rewritten } }));
+    expect(refused.status).toBe(400);
+    expect((await refused.json()).error).toBe("FIND_DECISION_IMMUTABLE");
+    expect(await new PrivateSpaceStore(root).load("case_synthetic")).toEqual(state.space);
+    const restored = await stateOf(await importSpace(request("/import", { token, body: { expectedRevision: state.space.revision, bundle } })));
+    expect(restored.space.finds[0].status).toBe("accepted");
+    expect(restored.space.leads[0].status).toBe("done");
+    expect(() => parsePrivateSpace({ ...restored.space, materials: restored.space.materials.map((item) => ({ ...item, findId: "find_missing" })) })).toThrow("INVALID_SPACE");
+  });
+});
+
+describe("assistant chat context", () => {
+  it("offers owner records as citable space references without bytes and keeps them scoped to the case", async () => {
+    const { buildChatContext } = await import("../src/private-case/chat-context");
+    const { initialSpace: fresh, applySpaceAction: apply } = await import("../src/private-case/space-logic");
+    const caseValue = { schemaVersion: 1 as const, id: "case_synthetic", title: "SYNTHETIC", revision: 1, updatedAt: now, subject: { personId: "synthetic-a", name: "Анна Учебная", dateText: "около 1900", livingStatus: "deceased" as const }, sources: [], known: [], question: "Учебный вопрос", notes: "", aiRuns: [], reviews: [] };
+    let space = fresh("case_synthetic", null, now);
+    space = apply(space, { action: "add_material", material: { kind: "note", title: "Рассказ бабушки", text: "Синтетическая заметка.", url: "", provenance: "Устный рассказ", dateText: "", personIds: ["synthetic-b"] }, original: null }, context).space;
+    space = apply(space, { action: "add_lead", lead: { personId: "synthetic-b", question: "Найти документ", placeText: "", periodText: "" } }, context).space;
+    const find = apply(space, { action: "add_find", find: { leadId: space.leads[0].id, personIds: ["synthetic-b"], title: "Кандидат", source, why: "Совпадают имя и год.", novelty: "new" } }, context);
+    space = find.space;
+    const chat = buildChatContext(caseValue, syntheticResearch(), [], { schemaVersion: 1, caseId: "case_synthetic", revision: 0, turns: [] }, space);
+    expect(chat.citations.map((item) => item.id)).toEqual(["research:synthetic-source", `space:${space.materials[0].id}`, `space:${find.created.findId}`]);
+    expect(chat.citations.at(-1)).toMatchObject({ scope: "space", url: source.url, locator: source.locator });
+    expect(chat.data).toContain("operator_manual");
+    expect(chat.data).not.toContain("data:image");
+    expect(chat.metadata.peopleCount).toBe(2);
+    expect(() => buildChatContext(caseValue, null, [], { schemaVersion: 1, caseId: "case_synthetic", revision: 0, turns: [] }, { ...space, caseId: "case_other" })).toThrow("CASE_SCOPE_VIOLATION");
+    const plain = buildChatContext(caseValue, syntheticResearch(), [], { schemaVersion: 1, caseId: "case_synthetic", revision: 0, turns: [] });
+    expect(plain.citations.map((item) => item.id)).toEqual(["research:synthetic-source"]);
+  });
+});

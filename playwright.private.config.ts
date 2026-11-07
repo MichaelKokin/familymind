@@ -12,7 +12,7 @@ if (!root || !path.resolve(root).startsWith(path.join(tmpdir(), "family-mind-pri
 
 export default defineConfig({
   testDir: "./e2e",
-  testMatch: ["private-case.spec.ts", "member-notes.spec.ts", "family-chat.spec.ts"],
+  testMatch: ["private-case.spec.ts", "private-space.spec.ts", "member-notes.spec.ts", "family-chat.spec.ts"],
   outputDir: ".local/private-test-results",
   fullyParallel: false,
   workers: 1,

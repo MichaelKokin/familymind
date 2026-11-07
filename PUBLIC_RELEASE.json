@@ -1,6 +1,6 @@
 {
   "format": "familymind-public-source-v1",
-  "preparedAt": "2026-11-07T15:22:44.880Z",
+  "preparedAt": "2026-11-07T23:25:15.356Z",
   "files": [
     {
       "path": ".gitignore",
@@ -24,8 +24,8 @@
     },
     {
       "path": "docs/IMPLEMENTATION_STATUS.md",
-      "sha256": "379e60ba22659accbe38f872db94f9bcbf946056394d61e93bef6ead9a3bc2ca",
-      "bytes": 2404
+      "sha256": "387af772dc4bae91c9cc502126a2283352e4e9eb35f58761e020020c44775828",
+      "bytes": 2882
     },
     {
       "path": "docs/M1_PILOT_CHECKLIST.md",
@@ -44,8 +44,8 @@
     },
     {
       "path": "docs/PRIVATE_EXPLORE.md",
-      "sha256": "23a33d3a7d65c69189b6c30a9b36c34459f42c304a83ae561906c99276f877c7",
-      "bytes": 9488
+      "sha256": "4a8b8424f3489c22df59892784706f8e14145de0b8d0ded51f9f5ac5dbec0d64",
+      "bytes": 28315
     },
     {
       "path": "docs/RESEARCH_REPORT.md",
@@ -81,6 +81,11 @@
       "path": "e2e/private-case.spec.ts",
       "sha256": "e2a91dc4de7e847d18a9c9f3c1adc10ae1a2e112b5324ca201a9f732161f0a9a",
       "bytes": 20656
+    },
+    {
+      "path": "e2e/private-space.spec.ts",
+      "sha256": "1a7df8a665fecb432a7add5743347fbe8ab9924f6253bc7fd2979403d0f523ab",
+      "bytes": 23509
     },
     {
       "path": "e2e/run-private.mjs",
@@ -124,8 +129,8 @@
     },
     {
       "path": "playwright.private.config.ts",
-      "sha256": "92293309929e86cf016308af021c6954e8fd45b7d2f7b86e7f2b3723ea53209c",
-      "bytes": 1441
+      "sha256": "54da18ebb5ece300224f741679614e0b0c8f8bef6d0bc685b7e6f9b7e209468e",
+      "bytes": 1466
     },
     {
       "path": "public/demo/finding.txt",
@@ -134,8 +139,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "45c77ab2b7b6dce228ea4d991cee4c31643713394908e5e2925c3e05b02b0fec",
-      "bytes": 4473
+      "sha256": "4fbea65e9511f20f78a8e5e06abd69effce85da7cdb5f82e5df8b4338b45314c",
+      "bytes": 4856
     },
     {
       "path": "scripts/audit-private-case.mjs",
@@ -184,8 +189,8 @@
     },
     {
       "path": "src/app/api/private/chat/route.ts",
-      "sha256": "6defefd75484f6cf6be0ee5e55512bf58b0ec5af52f15e768877d0488f2d35d4",
-      "bytes": 5300
+      "sha256": "1770b6c74912bb53a3d4f81fef73fc88f8a51eaf1b6deadd775adf0c801d90bc",
+      "bytes": 5768
     },
     {
       "path": "src/app/api/private/export/route.ts",
@@ -238,19 +243,49 @@
       "bytes": 909
     },
     {
+      "path": "src/app/api/private/space/export/route.ts",
+      "sha256": "68ec6a0cf95debdfb5c282c49a840e79684b24978b1e398418b3b01220693617",
+      "bytes": 162
+    },
+    {
+      "path": "src/app/api/private/space/import/route.ts",
+      "sha256": "135299eca8219d893c8ce4528296945c3dc51827c50f47cb77e7638023c8c523",
+      "bytes": 162
+    },
+    {
+      "path": "src/app/api/private/space/material/route.ts",
+      "sha256": "74d2b8c682920da043265504198525d2eadf1662c67450f63a575332c607ef0b",
+      "bytes": 162
+    },
+    {
+      "path": "src/app/api/private/space/media/route.ts",
+      "sha256": "03a8dadde105730859a856a2f2b9e00363ee0217089a96af78c36690063e29d8",
+      "bytes": 159
+    },
+    {
+      "path": "src/app/api/private/space/mutate/route.ts",
+      "sha256": "4674147d7cc233c76ce7ef442ad991cc5b4102c31319cd9d594ebdd07319933c",
+      "bytes": 162
+    },
+    {
+      "path": "src/app/api/private/space/route.ts",
+      "sha256": "3f6e208f53881258a1664c74274a1d802f9a0eee96bdd640dfd39a46cc53d428",
+      "bytes": 155
+    },
+    {
       "path": "src/app/case/case.module.css",
       "sha256": "a779f3a2e54e3d0111815ae83c73ba209a17bec524935e79526567d722a80848",
       "bytes": 18049
     },
     {
-      "path": "src/app/case/explore/explore.module.css",
-      "sha256": "5133a29212d71e788788ed8ab0cb1b4ec0a58ab809616759acb56c134c941512",
-      "bytes": 12823
-    },
-    {
       "path": "src/app/case/explore/page.tsx",
       "sha256": "8b38a1448f3758800c310cdadc06d5ebf14f3a497726b509eca614f45154f132",
       "bytes": 343
+    },
+    {
+      "path": "src/app/case/explore/space.module.css",
+      "sha256": "b69db8a5b36ff03da0722092047cdc0de824cda4f8aa5114706d67cca1f48a58",
+      "bytes": 24270
     },
     {
       "path": "src/app/case/members/page.tsx",
@@ -294,8 +329,8 @@
     },
     {
       "path": "src/components/FamilyChat.tsx",
-      "sha256": "24e69099d133d4760fcf9f1ccb952973b9a6fc183e8272773aeddcecf840e4cd",
-      "bytes": 7882
+      "sha256": "3afb9781ff34b7e1913c2bcb318de90ce2457f2182a4561e7868a0252a43aeac",
+      "bytes": 8103
     },
     {
       "path": "src/components/Inspector.tsx",
@@ -324,13 +359,43 @@
     },
     {
       "path": "src/components/PrivateExplore.tsx",
-      "sha256": "ff41b8e202e1af37e27ce4e8034c582cdb8db24f961f589a6876c94037358c06",
-      "bytes": 22798
+      "sha256": "17708827e4cf9689910aeec8ab43c41177a33140216945570f8932dba526d0e5",
+      "bytes": 42473
     },
     {
       "path": "src/components/ResearchPanel.tsx",
       "sha256": "ff12f90f0ae9871a9c28c5834d7414b9c8a88aa9fbf4297241e3f284b5cace4e",
       "bytes": 21456
+    },
+    {
+      "path": "src/components/space/AddMenu.tsx",
+      "sha256": "283b1e836a551024642b79b189847d5f65553d3f9cdfa86a3da49000efd142cd",
+      "bytes": 2133
+    },
+    {
+      "path": "src/components/space/space-client.ts",
+      "sha256": "30689261361eb2cb5f41f369adb27c609cea1f21d99c21910bd9ea34586aad36",
+      "bytes": 4217
+    },
+    {
+      "path": "src/components/space/SpaceAssistant.tsx",
+      "sha256": "834d2df3d292daa6db1ddd5c6eccddeeab8a496e3d3e2d0706aa68df9b06092e",
+      "bytes": 3445
+    },
+    {
+      "path": "src/components/space/SpaceCards.tsx",
+      "sha256": "0503f81d9bcbef93dd38b36ad1d6144532094f45c7a0332755ed780a757f0329",
+      "bytes": 5196
+    },
+    {
+      "path": "src/components/space/SpaceForms.tsx",
+      "sha256": "569043f2f899406d7457248337bff724e1146519ce007e83b6cc7f8972bbf829",
+      "bytes": 32120
+    },
+    {
+      "path": "src/components/space/SpacePanel.tsx",
+      "sha256": "a6ff35b7320a5f44b2388c7329bcf873335676ae771ea69a001b29291e3fc19f",
+      "bytes": 29172
     },
     {
       "path": "src/components/WorkspaceApp.tsx",
@@ -413,24 +478,29 @@
       "bytes": 8882
     },
     {
+      "path": "src/i18n/space.ts",
+      "sha256": "d56289fac1768b28d38e0e8294011116785a100be71a9a9f8f227eea807a8f1e",
+      "bytes": 25385
+    },
+    {
       "path": "src/private-case/access.ts",
       "sha256": "2d0352896172234c6ca0e04f0fc8c1fed2ac475bba83bc32caf3256ff7e83d79",
       "bytes": 8671
     },
     {
       "path": "src/private-case/ancestry-layout.ts",
-      "sha256": "1b853d3877709ba6a61a83bfc6758091af9f9f8a8f1042bc40f995133656205f",
-      "bytes": 6118
+      "sha256": "124251e1e733b95152827f6a716f298d1c6bb6ebe5e4bd01591f4cea213eb872",
+      "bytes": 6359
     },
     {
       "path": "src/private-case/chat-context.ts",
-      "sha256": "25379881ea353229b973a2ba73a9bfd62da5b6844719f7a8617fb73a7dafbb16",
-      "bytes": 10248
+      "sha256": "bd1c0df808f0ffe15b2465cdbfc8d8fdeb6d94bc8113eda94dae25f051800381",
+      "bytes": 13318
     },
     {
       "path": "src/private-case/chat-model.ts",
-      "sha256": "1842291eb667cede1503eb31047859d53ceaa9f6fa8c909dc3ff473be9a26cfd",
-      "bytes": 5020
+      "sha256": "bd462b2f573c2e353b0cb83d21f8a93320d4243feb6f718f4fd2f53dd53264b2",
+      "bytes": 5035
     },
     {
       "path": "src/private-case/chat-runner.ts",
@@ -489,8 +559,8 @@
     },
     {
       "path": "src/private-case/notes-runtime.ts",
-      "sha256": "371873ac0f227a99d59c3deedcf29468720a7c5794899b769387e1638131a655",
-      "bytes": 2204
+      "sha256": "a417d017d893fc6cc6b1456ee6df31348695fb40231a731296209cef53d3999d",
+      "bytes": 2593
     },
     {
       "path": "src/private-case/report.ts",
@@ -521,6 +591,36 @@
       "path": "src/private-case/session-api.ts",
       "sha256": "9f75ca42dee35d19398be99feabc500cfe68a7eae82036ec2ba16c3e9ff5e2ff",
       "bytes": 1001
+    },
+    {
+      "path": "src/private-case/space-api.ts",
+      "sha256": "234a807f91baff0015e86441a07800aaca3b3a745c16aa5c1d830bd24e7ec41f",
+      "bytes": 16173
+    },
+    {
+      "path": "src/private-case/space-guide.ts",
+      "sha256": "f0afa0b747f62593ad510d844cd08107a2a792c3cf295846eb1050b2f2f916aa",
+      "bytes": 4235
+    },
+    {
+      "path": "src/private-case/space-layout.ts",
+      "sha256": "5900baad3f4862ed54d0389124a26d92ca70f8b63718389b4f19c98ebb345d00",
+      "bytes": 15882
+    },
+    {
+      "path": "src/private-case/space-logic.ts",
+      "sha256": "862553672e74d03abbfd715e3ff9b8a2098f8579ebb13cfb156c66707917dd39",
+      "bytes": 22459
+    },
+    {
+      "path": "src/private-case/space-model.ts",
+      "sha256": "37a08a1b6f390036e676d44cc1f0c3dddff82e72cb246a19923acde6da82f786",
+      "bytes": 13441
+    },
+    {
+      "path": "src/private-case/space-store.ts",
+      "sha256": "8332a825d5cfc3ab226c758d46f88a044bc93cd1c0266ce931f3e9d01ff8376b",
+      "bytes": 10899
     },
     {
       "path": "templates/RESEARCH_INTAKE.md",
@@ -573,9 +673,24 @@
       "bytes": 5879
     },
     {
+      "path": "tests/private-space-finds.test.ts",
+      "sha256": "632e16d55107470f915e727b8eba28b4157ae374a04d9a608458ae68c7b403ec",
+      "bytes": 18259
+    },
+    {
+      "path": "tests/private-space.test.ts",
+      "sha256": "9e3f1db1acf4632a49d94121e6d8d2e8728667ba93831b72de36a41b09d624dc",
+      "bytes": 23105
+    },
+    {
       "path": "tests/research-report.test.ts",
       "sha256": "5d0aef2a10ec81b6966db968f60ced17372412eac82f3dcb410f439fba69e3e6",
       "bytes": 11271
+    },
+    {
+      "path": "tests/space-layout.test.ts",
+      "sha256": "f7226bfc7cc8198735798222723485fd535f39c4f0fb5cbc712514ab56eda716",
+      "bytes": 11138
     },
     {
       "path": "tests/storage.test.ts",

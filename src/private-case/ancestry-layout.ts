@@ -1,4 +1,3 @@
-import type { PrivateResearch } from "./research-model";
 
 export const ANCESTRY_CARD_WIDTH = 258;
 export const ANCESTRY_CARD_HEIGHT = 228;
@@ -22,6 +21,9 @@ export type AncestryNode = {
   repeated: boolean;
 };
 export type AncestryEdge = { id: string; relationshipId: string; source: string; target: string; role: ParentRole };
+/** Structural input: any people list with ids and typed directed relationships. */
+export type AncestryRelationship = { id: string; from: string; to: string; kind?: string; parentRole?: ParentRole };
+export type AncestryInput = { owner: { personId?: string }; people: ReadonlyArray<{ id: string }>; relationships: ReadonlyArray<AncestryRelationship> };
 export type AncestryLayout = {
   rootPersonId: string | null;
   nodes: AncestryNode[];
@@ -38,13 +40,13 @@ const compareIds = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
 /** Layout is derived only from typed, directed claims. Names, generations and
  * partner links never establish ancestry. Repeated ancestors get an occurrence
  * on each path so neither family branch is visually reassigned to the other. */
-export function ancestryLayout(data: Pick<PrivateResearch, "owner" | "people" | "relationships">): AncestryLayout {
+export function ancestryLayout(data: AncestryInput): AncestryLayout {
   const people = new Set(data.people.map(person => person.id));
   const rootPersonId = data.owner.personId && people.has(data.owner.personId) ? data.owner.personId : null;
   const result: AncestryLayout = { rootPersonId, nodes: [], edges: [], unplacedPersonIds: [], omittedCycleIds: [], truncated: false };
   if (!rootPersonId) return { ...result, unplacedPersonIds: [...people].sort(compareIds) };
 
-  const byChild = new Map<string, PrivateResearch["relationships"]>();
+  const byChild = new Map<string, AncestryRelationship[]>();
   for (const relation of data.relationships) {
     if (relation.kind !== "parent_child" || !people.has(relation.from) || !people.has(relation.to)) continue;
     const links = byChild.get(relation.to) ?? [];

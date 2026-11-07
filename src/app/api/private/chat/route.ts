@@ -8,6 +8,7 @@ import { listAccessibleNotes } from "../../../../private-case/notes-runtime";
 import { buildChatContext, visibleChatState } from "../../../../private-case/chat-context";
 import { CHAT_MAX_QUESTION, type ChatCapabilities, type ChatState, type ChatTurn } from "../../../../private-case/chat-model";
 import { PrivateChatStore } from "../../../../private-case/chat-store";
+import { PrivateSpaceStore } from "../../../../private-case/space-store";
 import { cancelChatProcess, executeChatTurn } from "../../../../private-case/chat-runner";
 
 export const runtime = "nodejs";
@@ -25,6 +26,11 @@ async function ownedChat(request: Request) {
   const subjects = new Map<string, { id: string; name: string }>();
   if (owned.value.subject.livingStatus === "deceased") subjects.set(owned.value.subject.personId, { id: owned.value.subject.personId, name: owned.value.subject.name });
   for (const person of research?.people || []) {
+    if (person.livingStatus === "deceased") subjects.set(person.id, { id: person.id, name: person.name });
+    if (person.livingStatus === "living") subjects.delete(person.id);
+  }
+  for (const person of (await new PrivateSpaceStore(owned.store.root).load(owned.value.id))?.people ?? []) {
+    if (person.removedAt) continue;
     if (person.livingStatus === "deceased") subjects.set(person.id, { id: person.id, name: person.name });
     if (person.livingStatus === "living") subjects.delete(person.id);
   }
@@ -51,7 +57,7 @@ export async function POST(request: Request) {
     const searchSubject = owned.capabilities.publicSearchSubjects.find(person => person.id === (input.data.searchSubjectId || owned.value.subject.personId)) || (!input.data.searchSubjectId ? owned.capabilities.publicSearchSubjects[0] : undefined);
     if ((input.data.searchWeb || input.data.searchSubjectId) && !searchSubject) throw new PrivateCaseError("PUBLIC_SEARCH_SCOPE_REQUIRED");
     const state = await owned.chat.recoverExpired(owned.value.id);
-    const context = buildChatContext(owned.value, owned.research, owned.notes, state);
+    const context = buildChatContext(owned.value, owned.research, owned.notes, state, await new PrivateSpaceStore(owned.store.root).load(owned.value.id));
     const turn: ChatTurn = { id: randomUUID(), question: input.data.question, searchWeb: input.data.searchWeb, status: "running", createdAt: new Date().toISOString(), completedAt: null, answer: null, citations: [], web: { status: "not_requested", subject: input.data.searchWeb ? searchSubject!.name : "", ...(input.data.searchWeb ? { subjectId: searchSubject!.id } : {}), queries: [], leads: [], limitation: "" }, context: context.metadata, error: null };
     const saved = await owned.chat.begin(owned.value.id, input.data.expectedRevision, turn);
     after(() => executeChatTurn(owned.chat, owned.value.id, turn, context, searchSubject?.name || ""));
