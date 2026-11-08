@@ -1,6 +1,6 @@
 {
   "format": "familymind-public-source-v1",
-  "preparedAt": "2026-11-07T23:25:15.356Z",
+  "preparedAt": "2026-11-08T00:00:33.299Z",
   "files": [
     {
       "path": ".gitignore",
@@ -24,8 +24,8 @@
     },
     {
       "path": "docs/IMPLEMENTATION_STATUS.md",
-      "sha256": "387af772dc4bae91c9cc502126a2283352e4e9eb35f58761e020020c44775828",
-      "bytes": 2882
+      "sha256": "8274ed0526bec533df7624b77b062dc1a153ad46f9bec19ce167b8a90e487c8c",
+      "bytes": 2901
     },
     {
       "path": "docs/M1_PILOT_CHECKLIST.md",
